@@ -1,40 +1,106 @@
 #pragma once
 
-#include "float_pfa.hpp"
+// Standard Libraries
 #include <array>
 #include <tuple>
+#include <vector>
+#include <cstdint> // For fixed-width integers like uint32_t, int64_t
+#include <cmath>   // For std::ceil, std::sqrt, std::exp, std::round
+#include <numeric> // For std::iota
+#include <limits>  // For std::numeric_limits
+#include <type_traits> // For std::make_unsigned_t, std::conditional_t
+#include <optional>    // For std::optional
+#include <functional>  // For std::function
+#include <memory>      // For std::unique_ptr
+#include <algorithm>   // For std::reverse, std::min
+#include <iterator>    // For std::distance
+#include <fstream>     // For std::ofstream, std::ostream, std::istream
+#include <iomanip>     // For std::setprecision, std::fixed
+#include <sstream>     // For std::stringstream
+#include <stdexcept>   // For std::runtime_error
+#include <iostream>    // For std::cerr, std::cout, std::endl (debugging/info)
+#include <utility>     // For std::pair
+
+// SDSL Library
 #include <sdsl/bit_vectors.hpp>
 #include <sdsl/int_vector.hpp>
 #include <sdsl/util.hpp>
+#include <sdsl/rank_support_v.hpp> // Explicitly include for rank_support_v
+#include <sdsl/io.hpp> // For sdsl::serialize, sdsl::load, sdsl::read_member, sdsl::write_member etc.
+#include <sdsl/structure_tree.hpp> // For sdsl::structure_tree_node
+#include <sdsl/bits.hpp> // Include for sdsl::bits::lo_set used in fallback
+
+// SIMD (Experimental)
+#include <experimental/simd> // Use the experimental SIMD interface
+// <immintrin.h> removed (conditionally included below if needed for specific intrinsics)
+// <stdfloat> removed
+
+// Project Headers
+#include "float_pfa.hpp"
 #include "my_elias_fano.hpp"
-#include <ranges>
-#include <experimental/simd>
-#include <execution>
-#include <immintrin.h>
-#include <functional>
-#include <stdfloat>
+
+// --- Portability Aliases and Definitions ---
+
+// Architecture-specific intrinsics (Example: BMI _bextr_u64)
+// Define a portable function alias. The implementation uses the intrinsic
+// if available (__BMI__ defined by compiler), otherwise uses a fallback.
+// NOTE: The function `bextr` within the class needs to be updated to call this alias.
+#ifdef __BMI__
+#include <immintrin.h> // Include intrinsics only when BMI is available
+inline uint64_t portable_bextr_u64(uint64_t word, unsigned int offset, unsigned int length) {
+    // Assumes length is appropriate for the intrinsic.
+    return _bextr_u64(word, offset, length);
+}
+#else
+inline uint64_t portable_bextr_u64(uint64_t word, unsigned int offset, unsigned int length) {
+    // Fallback implementation using standard C++ bitwise operations and SDSL helper
+    // This matches the original code's fallback logic.
+    // Ensure length is within the bounds expected by sdsl::bits::lo_set (typically 0..64).
+    if (length == 0) return 0;
+    // sdsl::bits::lo_set[length] generates a mask of 'length' low bits set to 1.
+    return (word >> offset) & sdsl::bits::lo_set[length];
+}
+#endif // __BMI__
+
+// Alias for std::experimental::simd namespace
+namespace stdx = std::experimental;
+
+// Alias for standard float types (replacing <stdfloat> usage)
+// NOTE: Uses of float64_alias_t later in the code (e.g., write_info_csv)
+// should be replaced with float64_alias_t.
+using float32_alias_t = float;
+using float64_alias_t = double; // Replaces float64_alias_t
+
+// --- End Portability Aliases ---
 
 namespace pfa::neats {
-    namespace stdx = std::experimental;
+    // stdx alias already defined globally
 
-    template<typename x_t = uint32_t, typename y_t = int64_t, typename poly = double, typename T1 = float, typename T2 = double>
+    template<typename x_t = uint32_t, typename y_t = int64_t, typename poly = double, typename T1 = float32_alias_t, typename T2 = float64_alias_t>
     class compressor {
         using poa_t = typename pfa::piecewise_optimal_approximation<x_t, y_t, poly, T1, T2>;
         using polygon_t = poa_t::convex_polygon_t;
         using out_t = poa_t::pna_fun_t;
 
+        // --- Type Aliases using Portable Definitions ---
         using int_scalar_t = y_t;
         using uint_scalar_t = std::make_unsigned_t<int_scalar_t>;
-        using float_scalar_t = std::conditional_t<sizeof(y_t) == 4, float, double>;
+        // Use aliased float types
+        using float_scalar_t = std::conditional_t<sizeof(y_t) == 4, float32_alias_t, float64_alias_t>;
 
+        // Use aliased stdx namespace and native_simd for SIMD types
+        // std::experimental::native_simd attempts architecture detection
         using uintv_simd_t = stdx::native_simd<uint_scalar_t>;
         using intv_simd_t = stdx::native_simd<int_scalar_t>;
-
         using floatv_simd_t = stdx::native_simd<float_scalar_t>;
+        // --- End Type Aliases ---
+
         static_assert(uintv_simd_t::size() == floatv_simd_t::size());
         static constexpr auto simd_width = uintv_simd_t::size();
-        static constexpr auto _simd_width_bit_size = simd_width * sizeof(int_scalar_t) * 8; // 512 bits
+        // This calculation is based on the aliased types, should remain portable
+        static constexpr auto _simd_width_bit_size = simd_width * sizeof(int_scalar_t) * 8;
 
+        // --- Member Variable Declarations (using potentially aliased types T1, T2) ---
         std::vector<std::pair<uint8_t, out_t>> mem_out{};
 
         bool lossy = false;
@@ -47,18 +113,18 @@ namespace pfa::neats {
         sdsl::int_vector<64> residuals;
 
         MyEliasFano<false> offset_residuals_ef;
-        sdsl::int_vector<> bits_per_correction;
+        sdsl::int_vector<> bits_per_correction; // Uses standard int types
 
         sdsl::bit_vector model_types_0;
         sdsl::bit_vector model_types_1;
         sdsl::bit_vector qbv;
 
-        std::vector<T1> coefficients_t0;
-        std::vector<T1> coefficients_t1;
-        std::vector<T2> coefficients_t2;
-        std::vector<x_t> coefficients_s;
+        std::vector<T1> coefficients_t0; // Uses template type T1 (aliased float32_alias_t by default)
+        std::vector<T1> coefficients_t1; // Uses template type T1 (aliased float32_alias_t by default)
+        std::vector<T2> coefficients_t2; // Uses template type T2 (aliased float64_alias_t by default)
+        std::vector<x_t> coefficients_s; // Uses standard int types
 
-        // each pattern depends on approx_fun_t enum
+        // sdsl rank supports are type-agnostic regarding the underlying bitvector
         sdsl::rank_support_v<1> fun_1_rank;
         sdsl::rank_support_v<1> quad_fun_rank;
 
@@ -641,11 +707,9 @@ namespace pfa::neats {
 
         /** Extract contiguous bits from a 64-bit integer. */
         inline uint64_t bextr(uint64_t word, unsigned int offset, unsigned int length) const {
-#ifdef __BMI__
-            return _bextr_u64(word, offset, length);
-#else
-            return (word >> offset) & sdsl::bits::lo_set[length];
-#endif
+            // Now simply call the portable function defined earlier.
+            // This function handles the #ifdef internally.
+            return portable_bextr_u64(word, offset, length);
         }
 
 /** Reads the specified number of bits (must be < 58) from the given position. */
@@ -1497,11 +1561,11 @@ namespace pfa::neats {
                     ostream << (uint64_t) (s.value()) << ",";
                 } else if ((typename poa_t::approx_fun_t) (mt) == poa_t::approx_fun_t::Quadratic) {
                     t0 = coefficients_t0[offset_coefficients_t0++];
-                    ostream << "," << (std::float64_t) (t0.value());
+                    ostream << "," << (float64_alias_t) (t0.value());
                 } else {
                     ostream << ",";
                 }
-                ostream << "," << (std::float64_t) (t1) << "," << (std::float64_t) (t2) << ",";
+                ostream << "," << (float64_alias_t) (t1) << "," << (float64_alias_t) (t2) << ",";
                 ostream << (end - start) << ",";
                 auto model = poa_t::piecewise_non_linear_approximation::make_fun((typename poa_t::approx_fun_t) (mt),
                                                                                  start, s, t0, t1, t2);

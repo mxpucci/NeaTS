@@ -1,0 +1,3 @@
+/Users/michelangelopucci/NeaTS++/build/CMakeFiles/main.dir
+/Users/michelangelopucci/NeaTS++/build/CMakeFiles/edit_cache.dir
+/Users/michelangelopucci/NeaTS++/build/CMakeFiles/rebuild_cache.dir
