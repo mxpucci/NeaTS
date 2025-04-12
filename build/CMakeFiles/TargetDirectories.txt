@@ -1,3 +1,7 @@
 /Users/michelangelopucci/NeaTS++/build/CMakeFiles/main.dir
 /Users/michelangelopucci/NeaTS++/build/CMakeFiles/edit_cache.dir
 /Users/michelangelopucci/NeaTS++/build/CMakeFiles/rebuild_cache.dir
+/Users/michelangelopucci/NeaTS++/build/CMakeFiles/list_install_components.dir
+/Users/michelangelopucci/NeaTS++/build/CMakeFiles/install.dir
+/Users/michelangelopucci/NeaTS++/build/CMakeFiles/install/local.dir
+/Users/michelangelopucci/NeaTS++/build/CMakeFiles/install/strip.dir

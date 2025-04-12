@@ -11,6 +11,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "CMakeFiles/3.31.4/CMakeCCompiler.cmake"
   "CMakeFiles/3.31.4/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.31.4/CMakeSystem.cmake"
+  "/Users/michelangelopucci/NeaTS++/cmake/NeaTSConfig.cmake.in"
   "/opt/homebrew/share/cmake/Modules/CMakeCCompiler.cmake.in"
   "/opt/homebrew/share/cmake/Modules/CMakeCCompilerABI.c"
   "/opt/homebrew/share/cmake/Modules/CMakeCInformation.cmake"
@@ -31,6 +32,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/opt/homebrew/share/cmake/Modules/CMakeGenericSystem.cmake"
   "/opt/homebrew/share/cmake/Modules/CMakeInitializeConfigs.cmake"
   "/opt/homebrew/share/cmake/Modules/CMakeLanguageInformation.cmake"
+  "/opt/homebrew/share/cmake/Modules/CMakePackageConfigHelpers.cmake"
   "/opt/homebrew/share/cmake/Modules/CMakeParseImplicitIncludeInfo.cmake"
   "/opt/homebrew/share/cmake/Modules/CMakeParseImplicitLinkInfo.cmake"
   "/opt/homebrew/share/cmake/Modules/CMakeParseLibraryArchitecture.cmake"
@@ -124,6 +126,7 @@ set(CMAKE_MAKEFILE_DEPENDS
   "/opt/homebrew/share/cmake/Modules/Platform/Linker/Apple-AppleClang-CXX.cmake"
   "/opt/homebrew/share/cmake/Modules/Platform/Linker/Apple-AppleClang.cmake"
   "/opt/homebrew/share/cmake/Modules/Platform/UnixPaths.cmake"
+  "/opt/homebrew/share/cmake/Modules/WriteBasicConfigVersionFile.cmake"
   )
 
 # The corresponding makefile is:
@@ -139,6 +142,7 @@ set(CMAKE_MAKEFILE_PRODUCTS
   "CMakeFiles/3.31.4/CMakeCXXCompiler.cmake"
   "CMakeFiles/3.31.4/CMakeCCompiler.cmake"
   "CMakeFiles/3.31.4/CMakeCXXCompiler.cmake"
+  "NeaTSConfig.cmake"
   "CMakeFiles/CMakeDirectoryInformation.cmake"
   )
 

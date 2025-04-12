@@ -1,49 +1,9 @@
-# NeaTSConfig.cmake.in
-
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
-# If you have dependencies (such as sux or sdsl) you can find them here.
-# find_dependency(AnotherDependency REQUIRED)
+# If you depend on other packages, you can find them here.
+# For example, if sux or sdsl were installed separately:
+# find_dependency(sux REQUIRED)
+# find_dependency(sdsl REQUIRED)
 
-# Import the exported targets
 include("${CMAKE_CURRENT_LIST_DIR}/NeaTSTargets.cmake")
-```
-
-Then, in your top-level `CMakeLists.txt`, add an installation rule and configure the config file:
-
-```cmake
-include(CMakePackageConfigHelpers)
-
-# Install headers (from your /include folder)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
-    DESTINATION include
-)
-
-# Export the NeaTS target
-install(TARGETS NeaTS
-    EXPORT NeaTSTargets
-    INCLUDES DESTINATION include
-)
-
-# Generate and install the export file
-install(EXPORT NeaTSTargets
-    FILE NeaTSTargets.cmake
-    NAMESPACE NeaTS::
-    DESTINATION cmake
-)
-
-# Configure the NeaTSConfig.cmake file
-configure_package_config_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/NeaTSConfig.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/NeaTSConfig.cmake
-    INSTALL_DESTINATION cmake
-    NO_SET_AND_CHECK_MACRO
-    NO_CHECK_REQUIRED_COMPONENTS_MACRO
-)
-
-# Install package configuration files
-install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/NeaTSConfig.cmake
-    DESTINATION cmake
-)
